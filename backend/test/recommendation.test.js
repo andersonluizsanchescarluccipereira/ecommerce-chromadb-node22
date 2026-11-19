@@ -28,7 +28,7 @@ test('dados iniciais possuem usuários, produtos e compras',()=>{
 test('não recomenda produtos que a pessoa já comprou', async()=>{
   const {db,service,getVector}=setup();
   const answer=await service.recommend(1,4);
-  assert.equal(answer.mode,'similaridade-vetorial');
+  assert.equal(answer.mode,'vector');
   assert.ok(!answer.recommendations.some(p=>[1,2].includes(p.id)));
   assert.equal(answer.recommendations[0].id,3);
   assert.equal(getVector().length,13);

@@ -13,7 +13,7 @@ export function catalogController(repo, recommendations) {
     const id=validId(req.params.id);
     const limit=Number(req.query.limit ?? 5);
     if (!Number.isSafeInteger(limit)||limit<1||limit>50) throw new HttpError(400,'limit deve estar entre 1 e 50');
-    const result=await recommendations.recommend(id,limit);
+    const result=await recommendations.recommend(id,limit,String(req.query.mode??'hybrid'));
     if (!result) throw new HttpError(404,'Usuário não encontrado');
     res.json(result);
   };

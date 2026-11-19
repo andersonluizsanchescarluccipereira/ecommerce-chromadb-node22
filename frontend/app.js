@@ -58,15 +58,13 @@ function renderUser() {
   renderProducts();
 }
 function renderRecommendations(result) {
-  $('recExplanation').textContent = result.mode==='popularidade'
-    ? 'Perfil sem compras: mostramos os produtos mais populares. Faça uma compra e atualize para personalizar.'
-    : 'Produtos próximos ao vetor das suas compras. Produtos já comprados ficam fora da lista.';
+  $('recExplanation').textContent = result.note;
   $('recommendations').innerHTML=result.recommendations.length ? result.recommendations.map((p,i)=>`
     <div class="recommend-card">
       <span class="emoji" aria-hidden="true">${productIcon(p)}</span>
       <strong>${i+1}. ${escapeHtml(p.name)}</strong>
       <div class="meta">${escapeHtml(p.category)} · ${formatCurrency(p.price)}</div>
-      <span class="score">${result.mode==='popularidade'?'Popularidade':`${(p.score*100).toFixed(1)}% similaridade`}</span>
+      <span class="score">${result.mode==='popularidade'?'Popularidade':`${(p.score*100).toFixed(1)}% ${result.mode==='vector'?'similaridade':'score neural'}`}</span>
     </div>`).join('') : '<p class="placeholder">Nenhuma nova recomendação disponível.</p>';
 }
 async function selectUser(userId) {
@@ -75,7 +73,7 @@ async function selectUser(userId) {
   setBusy(true);
   try {
     const [user,recommendations]=await Promise.all([
-      api(`/users/${userId}`),api(`/users/${userId}/recommendations?limit=6`)
+      api(`/users/${userId}`),api(`/users/${userId}/recommendations?limit=6&mode=${encodeURIComponent($('modeSelect').value)}`)
     ]);
     if(token!==state.selectionToken)return;
     state.user=user;
@@ -95,6 +93,19 @@ async function action(method,productId) {
     await selectUser(state.selectedUserId);
   } catch(e) {notify(e.message);} finally {setBusy(false);}
 }
+async function updateModelStatus() {
+  const m=await api('/model/status');
+  $('modelStatus').textContent=m.training?'Treinando...':m.trained?`Treinado · ${m.epochs} épocas · ${m.examples} exemplos`:'Não treinado';
+  $('trainingHistory').textContent=(m.history||[]).map(h=>`Época ${String(h.epoch).padStart(3)} | loss=${h.loss} | accuracy=${(h.accuracy*100).toFixed(1)}%`).join('\n');
+}
+async function trainModel() {
+  const button=$('train');button.disabled=true;
+  $('modelStatus').textContent='Treinando em Worker Thread...';
+  try {await api('/model/train',{method:'POST',body:JSON.stringify({epochs:100})});
+    await updateModelStatus();await selectUser(state.selectedUserId);notify('Treinamento concluído e modelo salvo!');
+  } catch(e){notify(e.message);await updateModelStatus().catch(()=>{});}
+  finally{button.disabled=false;}
+}
 async function main() {
   try {
     const [users,products,health]=await Promise.all([api('/users'),api('/products'),api('/health')]);
@@ -104,6 +115,9 @@ async function main() {
     $('userSelect').innerHTML=users.map(u=>`<option value="${u.id}">${escapeHtml(u.name)}</option>`).join('');
     $('userSelect').addEventListener('change',e=>selectUser(Number(e.target.value)));
     $('refresh').addEventListener('click',()=>selectUser(state.selectedUserId));
+    $('modeSelect').addEventListener('change',()=>selectUser(state.selectedUserId));
+    $('train').addEventListener('click',trainModel);
+    await updateModelStatus();
     document.addEventListener('click',e=>{
       const buy=e.target.closest('button.buy');
       const remove=e.target.closest('button.remove');

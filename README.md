@@ -1,3 +1,75 @@
+# VectorShop v2 — ChromaDB + TensorFlow.js + Node.js 22
+
+**Correção do laboratório:** esta versão preserva a API MVC, SQLite, ChromaDB, frontend e Podman, e acrescenta uma **rede neural treinável de verdade** com `@tensorflow/tfjs`, arquitetura **128 → 64 → 32 → 1**, ativação ReLU nas camadas ocultas, sigmoid na saída, Adam, binary crossentropy e **100 épocas**. O treinamento e a inferência rodam em **Node.js Worker Threads**. A implementação da rede é uma reconstrução compatível com a arquitetura discutida, não uma cópia byte a byte do repositório de referência.
+
+## Arquitetura
+
+```text
+Navegador :8080 → Nginx → API Express MVC :3001
+                                 ├─ SQLite: clientes, produtos, compras
+                                 ├─ ChromaDB :8000: embeddings determinísticos de 13 dimensões
+                                 └─ TensorFlow.js Worker Thread: 27 entradas → 128 → 64 → 32 → 1
+                                            └─ modelo e histórico salvos em /app/data/neural-model.json
+```
+
+**Treinamento:** SQLite fornece pares cliente/produto rotulados (comprado = 1; não comprado = 0, simplificação didática). O perfil de entrada exclui o próprio produto alvo para evitar vazamento direto do rótulo. São 6 usuários × 10 produtos = 60 exemplos no seed inicial. Um Worker Thread treina 100 épocas e persiste os pesos, shapes, loss e accuracy. As compras novas **não alteram os pesos imediatamente**: clique em **Treinar 100 épocas** para atualizar o modelo. O primeiro boot treina automaticamente se não houver modelo salvo.
+
+**Inferência híbrida:** perfil de compras → embedding estruturado → ChromaDB recupera candidatos → TensorFlow.js calcula o score para cada candidato → API ordena e retorna Top N. **Somente neural** pontua todos os produtos não comprados. **Somente vetor** usa similaridade cosseno. Cold start usa popularidade. O score sigmoid não é probabilidade calibrada.
+
+**Limitações:** poucos dados e negativos presumidos podem causar overfitting e viés. Accuracy de treino não comprova generalização. Em produção: coleta de impressões e cliques, amostragem negativa criteriosa, split temporal treino/validação/teste, métricas Recall@K/NDCG@K, embeddings adequados, autenticação e autorização, jobs de retreinamento e versionamento de modelos. Este projeto é **didático**, sem garantia de qualidade preditiva.
+
+## Linux Mint XFCE + Podman
+
+```bash
+sudo apt install -y podman podman-compose
+cd ecommerce-chromadb-node22
+podman-compose up -d --build
+podman ps -a
+curl -I http://localhost:8080
+curl http://localhost:3001/api/model/status
+```
+
+Imagens usam nomes qualificados `docker.io/library/nginx:1.27-alpine` e `docker.io/library/node:22-alpine`, corrigindo o erro de short-name do Podman 4.9.3. Chroma usa `chromadb/chroma:1.5.9` que já funcionou no seu ambiente. O build instala `@tensorflow/tfjs` via npm e pode levar alguns minutos.
+
+- Frontend: http://localhost:8080
+- API: http://localhost:3001/api
+- ChromaDB: http://localhost:8000
+
+### Endpoints
+
+```http
+GET  /api/health
+GET  /api/users
+GET  /api/products
+GET  /api/users/1/recommendations?limit=5&mode=hybrid
+GET  /api/users/1/recommendations?limit=5&mode=vector
+GET  /api/users/1/recommendations?limit=5&mode=neural
+GET  /api/model/status
+POST /api/model/train
+Content-Type: application/json
+
+{"epochs":100}
+```
+
+```bash
+curl -X POST http://localhost:3001/api/model/train \
+  -H 'Content-Type: application/json' -d '{"epochs":100}'
+```
+
+## Testes
+
+```bash
+cd backend
+npm install
+npm test
+```
+
+A inferência e o treinamento dependem da instalação de `@tensorflow/tfjs`. A implementação usa o backend CPU puro do TensorFlow.js, sem binários nativos, para simplificar Podman e Linux Mint. **Não exponha `/api/model/train` publicamente**: é endpoint administrativo sem autenticação, apenas para uso local.
+
+---
+
+## Documentação anterior (mantida como referência)
+
 # VectorShop — laboratório de recomendação com Node.js 22 + ChromaDB
 
 Projeto didático inspirado no exemplo de e-commerce do módulo 01 da formação Engenharia de Software com IA Aplicada.

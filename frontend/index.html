@@ -3,25 +3,25 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Laboratório de recomendação vetorial com Node.js e ChromaDB">
-  <title>VectorShop | Laboratório ChromaDB</title>
+  <meta name="description" content="Laboratório híbrido com TensorFlow.js, Node.js e ChromaDB">
+  <title>VectorShop | TensorFlow.js + ChromaDB</title>
   <link rel="stylesheet" href="./style.css">
 </head>
 <body>
 <header class="topbar">
   <div class="topbar-inner">
     <a class="brand" href="/" aria-label="VectorShop início"><span class="brand-icon">◇</span> Vector<span>Shop</span></a>
-    <span class="top-label">LABORATÓRIO DE IA · NODE.JS 22 + CHROMADB</span>
+    <span class="top-label">LABORATÓRIO DE IA · NODE.JS 22 + CHROMADB + TENSORFLOW.JS</span>
     <div class="health" id="health"><span class="dot"></span> Conectando...</div>
   </div>
 </header>
 <main class="container">
   <section class="hero">
     <div>
-      <div class="eyebrow">RECOMENDAÇÃO BASEADA EM VETORES</div>
-      <h1>Um catálogo que <em>aprende suas preferências.</em></h1>
-      <p>Escolha um perfil, simule compras e veja como o ChromaDB encontra produtos semelhantes. Os dados são servidos pela API, não por arquivos no navegador.</p>
-      <div class="chips"><span>Node.js 22</span><span>MVC</span><span>SQLite</span><span>ChromaDB</span><span>13 dimensões</span></div>
+      <div class="eyebrow">RECUPERAÇÃO VETORIAL + RANQUEAMENTO NEURAL</div>
+      <h1>Busca vetorial com <em>aprendizado neural.</em></h1>
+      <p>ChromaDB recupera candidatos e TensorFlow.js ranqueia com rede neural 128 → 64 → 32 → 1. Simule compras e retreine o modelo.</p>
+      <div class="chips"><span>Node.js 22</span><span>MVC</span><span>SQLite</span><span>ChromaDB</span><span>13 dimensões vetoriais</span><span>TensorFlow.js</span><span>100 épocas</span></div>
     </div>
     <div class="hero-visual" aria-hidden="true"><div class="orb">◈</div><div class="mini">VECTOR SPACE<br><strong>COSINE SIMILARITY</strong><br>13 DIMENSIONS</div></div>
   </section>
@@ -34,12 +34,19 @@
       <div class="profile-card"><div class="avatar" id="userAvatar">?</div><div><strong id="userName">Selecione um usuário</strong><div class="subtle" id="userAge">—</div></div></div>
       <div class="panel-heading"><h3>Histórico de compras</h3><span class="counter" id="purchaseCount">0</span></div>
       <div id="purchases" class="purchase-list"><p class="placeholder">Nenhuma compra registrada</p></div>
-      <div class="info-note"><strong>Como funciona?</strong> O backend transforma as compras em um vetor de preferências e consulta produtos parecidos no ChromaDB.</div>
+      <div class="info-note"><strong>Como funciona?</strong> O ChromaDB recupera produtos semelhantes; o TensorFlow.js classifica os candidatos com pesos treinados. Novas compras entram no próximo retreinamento.</div>
     </aside>
 
     <section class="content">
       <div class="panel recommend-panel">
         <div class="panel-header"><span class="section-num">02</span><h2>Recomendados para você</h2><button id="refresh" class="button secondary">↻ Atualizar</button></div>
+        <div class="model-controls" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:12px 0">
+          <label for="modeSelect">Modo</label>
+          <select id="modeSelect"><option value="hybrid">Híbrido (Chroma + Neural)</option><option value="vector">Somente ChromaDB</option><option value="neural">Somente rede neural</option></select>
+          <button id="train" class="button secondary">Treinar 100 épocas</button>
+          <span id="modelStatus" class="subtle">Carregando modelo...</span>
+        </div>
+        <details style="margin:10px 0"><summary>Histórico de treinamento (loss / accuracy)</summary><pre id="trainingHistory" style="white-space:pre-wrap;max-height:250px;overflow:auto"></pre></details>
         <p id="recExplanation" class="subtle">Escolha um usuário para começar.</p>
         <div id="recommendations" class="recommendations"><p class="placeholder">Carregando recomendações...</p></div>
       </div>
@@ -49,7 +56,7 @@
   </section>
   <div id="message" role="status" aria-live="polite" class="toast" hidden></div>
 </main>
-<footer><span>VectorShop · Demonstração educacional de busca vetorial</span><span>Sem LLM, sem API externa de IA e sem rede neural treinada</span></footer>
+<footer><span>VectorShop · Demonstração educacional de recuperação vetorial + rede neural</span><span>TensorFlow.js treinado em Worker Thread; sem LLM</span></footer>
 <script type="module" src="./app.js"></script>
 </body>
 </html>
