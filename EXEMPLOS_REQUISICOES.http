@@ -1,0 +1,31 @@
+@api = http://localhost:3001/api
+
+### Saúde
+GET {{api}}/health
+
+### Listar usuários
+GET {{api}}/users
+
+### Perfil com histórico
+GET {{api}}/users/1
+
+### Catálogo
+GET {{api}}/products
+
+### Recomendações com compras
+GET {{api}}/users/1/recommendations?limit=5
+
+### Recomendações do usuário novo
+GET {{api}}/users/99/recommendations?limit=5
+
+### Comprar produto 3
+POST {{api}}/users/99/purchases
+Content-Type: application/json
+
+{"productId":3}
+
+### Ver resultado depois de comprar
+GET {{api}}/users/99/recommendations?limit=5
+
+### Remover compra
+DELETE {{api}}/users/99/purchases/3

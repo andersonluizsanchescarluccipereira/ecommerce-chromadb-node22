@@ -1,0 +1,42 @@
+services:
+  chroma:
+    image: chromadb/chroma:1.5.9
+    environment:
+      CHROMA_PERSIST_PATH: /data
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - chroma-data:/data
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ./backend
+    environment:
+      NODE_ENV: production
+      PORT: "3001"
+      HOST: 0.0.0.0
+      CHROMA_URL: http://chroma:8000
+      DB_PATH: /app/data/ecommerce.sqlite
+      CORS_ORIGIN: http://localhost:8080
+    ports:
+      - "127.0.0.1:3001:3001"
+    volumes:
+      - sqlite-data:/app/data
+    depends_on:
+      - chroma
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    ports:
+      - "127.0.0.1:8080:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  chroma-data:
+  sqlite-data:
